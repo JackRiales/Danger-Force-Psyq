@@ -17,6 +17,14 @@ You want to _PLAY_ the thing!? Good gravy! OK, well, it'd be a hard sell to ask 
 
 * Dreamcast is the same situation. Probably ISOs. 
 
+### Actually important credits section ###
+
+Being that this is now almost a 20 year old API I needed a lot of help getting this sucker going. Here I'm going to (((try))) and compile all of the help that I used for this project.
+
+* [PSXDEV.NET](http://psxdev.net) Basically the best resource for PS1 development in these modern times
+* [PSXFINDER](https://github.com/apiraino/psx_pxfinder) Helped me out with finding pixel coordinates
+* [Orion](http://onorisoft.free.fr/retro.htm?psx/tutorial/tuto.htm) Amazing guy with amazing articles about old console dev. Really great stuff and I admittedly lifted a good bit of platform code out of his PsxLib library. This article is probably WAY better than anything you'll find here, and that's my justifcation for using his library. DESPITE how it looks, by the way, it's a relatively new site.
+
 ### I have a cool idea and you should listen ###
 
 Sweet dude hit me up
