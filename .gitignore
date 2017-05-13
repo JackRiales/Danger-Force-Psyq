@@ -1,3 +1,10 @@
+# Build folders
 build/
+meta/bmp/
+meta/tim/
+
+# Mac meta-files
 .DS_Store
-#*
+
+# Emacs lock files
+.#*
