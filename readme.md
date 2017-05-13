@@ -1,6 +1,8 @@
 # Danger Force #
 ## A bullet hell homebrew game made using legacy console SDKs ##
 
+*Playability State:* **NOT**
+
 ### ... Why!? Because... because it's kinda cool I dunno. ###
 
 Danger Force is a game I've been writing for a while (and continue to write, privately) for desktop platforms using C. I like C because I like writing games the old fashion way -- I don't really care for new and "_better_" tricks of modern langs. Anyway, I decided it would be a fun challenge to make this game for classic systems because it's ironically not all that hard and I think the limitations are fun to work around. I plan to write this 'legacy' version of Danger Force and port it to PSX, N64, and the Sega Dreamcast. Maybe afterwards the real game will get done lmao.
