@@ -9,19 +9,18 @@
 
 /* System and region variables  */
 #define DEBUG 1                 /* Show and print debug information */
-#define OT_LENGTH 1             /* Maximum OrderTable length */
-#define PACKETMAX 18            /* Maximum number of objects that can be on screen */
+#define OT_LENGTH 10            /* Maximum OrderTable length */
+#define BUFFER_COUNT 2          /* Graphics system will be double-buffered */
+#define GPUPACKETSIZE 64        /* Size of each GPU packet (?)*/
+#define GPUPACKETMAX 1000       /* Maximum number of objects that can be on screen (?) */
 #define SCREEN_WIDTH 320        /* Screen width, in pixels (standard) */
-#if REGION_NTSC
-#define SCREEN_HEIGHT 240       /* NTSC (American) screen height in pixels */
-#else
-#define SCREEN_HEIGHT 256       /* PAL (International) screen height */
-#endif
+#define SCREEN_HEIGHT_NTSC 240  /* NTSC (American) screen height in pixels */
+#define SCREEN_HEIGHT_PAL  256  /* PAL (International) screen height */
 
 /* System constants */
 #define __ramsize   0x00200000; /* 2 MB of RAM */
 #define __stacksize 0x00004000; /* 16 KB of Stack Space */
-#define TIM_HEADER_OFFSET 4     /* Size of the header of a tim file.
+#define TIM_HEADER_SIZE 4       /* Size of the header of a tim file.
                                    Used for when we only want the actual image data */
 
 /* Game specific variables */
