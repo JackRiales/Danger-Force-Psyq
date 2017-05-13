@@ -27,17 +27,17 @@ float move_offset = 1.3;
 #endif
 
 /* Globals */
+GsOT     OT[BUFFER_COUNT];
+GsOT_TAG ZSort[BUFFER_COUNT][1 << OT_LENGTH];
+PACKET   GPUPackets[BUFFER_COUNT][GPUPACKETSIZE * GPUPACKETMAX];
+RGB8     BackgroundColor;
+u8       ActiveBuffer;
+u64      SystemTimer;
+s32      SystemPad, SystemPadT;
 
-// Actually important stuff
-GsOT sgMainOrderTable[BUFFER_COUNT];
-GsOT_TAG sgMainOrderTableTag[BUFFER_COUNT][1<<OT_LENGTH];
-PACKET sgGPUPacketArea[BUFFER_COUNT][GPUPACKETSIZE * GPUPACKETMAX];
-INTERNAL u8 ClearColor[3];
-INTERNAL s8 CurrentBuffer; /* Holds the ID of the current buffer */
-INTERNAL u64 SystemTimer;
-
-// Testing stuff
-GsSPRITE image;
+// Sprite
+static GsIMAGE image;
+static GsSPRITE sprite;
 
 INTERNAL void
 VSYNCCounterWait( void )
@@ -53,8 +53,6 @@ InitializeSystem(BOOL bitmode24,
                  BOOL interlaced,
                  BOOL dithermode)
 {
-    printf("\n\n DANGER FORCE by Jack Riales ((NotebookDeviant)) [2017] \nhttps://github.com/JackRiales/Danger-Force-Psyq");
-
     u64 videomode = 0; // NTSC by default
     u16 screen_height = SCREEN_HEIGHT_NTSC; // NTSC by default
     u16 intermode = 0;
@@ -71,24 +69,122 @@ InitializeSystem(BOOL bitmode24,
         intermode = GsINTER;
     else
         intermode = GsNONINTER;
-    
+
+    /* Initialize callbacks and pads */
     ResetCallback();
     PadInit(0);
 
+    /* Setup video system */
     SetGraphDebug(0);
     SetVideoMode(videomode);
     GsInitGraph(SCREEN_WIDTH, screen_height, intermode | GsOFSGPU, dithermode, bitmode24);
+    if (interlaced)
+        GsDefDispBuff(0, 0, 0, 0);
+    else
+        GsDefDispBuff(0, 0, 0, screen_height);
+    GsClearDispArea(0, 0, 0);
+    
+    /* Setup the order tables */
+    OT[0].length = OT_LENGTH;
+    OT[1].length = OT_LENGTH;
+    OT[0].org    = ZSort[0];
+    OT[1].org    = ZSort[1];
+    GsClearOt(0, 0, &OT[0]);
+    GsClearOt(0, 0, &OT[1]);
+
+    /* Upload the default system font pattern to the VRAM and set it as our debug font */
+    FntLoad(960, 256);
+    FntOpen(0, 0, SCREEN_WIDTH, screen_height, 0, 512);
+    
+    /* Setup the counter */
+    SystemTimer = 0;
+    VSyncCallback(VSYNCCounterWait);
     
     /* Set background color */
-    ClearColor[0] = 0;
-    ClearColor[1] = 0;
-    ClearColor[2] = 0;
+    BackgroundColor.r = 0xff;
+    BackgroundColor.g = 0;
+    BackgroundColor.b = 0;
 }
 
 INTERNAL void
+ExitSystem( void )
+{
+    PadStop();
+    ResetGraph(0);
+    StopCallback();
+}
+
+GsIMAGE LoadTIM(u64 *memaddr)
+{
+    RECT r;
+    GsIMAGE tim;
+
+    GsGetTimInfo(memaddr+1, &tim);
+
+    r.x = tim.px;
+    r.y = tim.py;
+    r.w = tim.pw;
+    r.h = tim.ph;
+    LoadImage(&r, tim.pixel);
+    DrawSync(0);
+
+    if ((tim.pmode >> 3) & 0x01)
+    {
+        r.x = tim.cx;
+        r.y = tim.cy;
+        r.w = tim.cw;
+        r.h = tim.ch;
+        LoadImage(&r, tim.clut);
+        DrawSync(0);
+    }
+    
+    return tim;
+}
+
+INTERNAL GsSPRITE
+MakeSprite(GsIMAGE tim)
+{
+    GsSPRITE spr;
+
+    switch (tim.pmode & 3)
+    {
+        case 0: // 4-bit
+            spr.w = tim.pw << 2;
+            spr.u = (tim.px & 0x3f) * 4;
+            break;
+        case 1: // 8-bit
+            spr.w = tim.pw << 1;
+            spr.u = (tim.px & 0x3f) * 2;
+            break;
+        default: // 16-bit
+            spr.w = tim.pw;
+            spr.u = tim.px & 0x3f;
+    }
+
+    spr.h = tim.ph;
+    spr.v = tim.py & 0xff;
+
+    spr.tpage = GetTPage((tim.pmode & 3), 0, tim.px, tim.py);
+    spr.attribute = (tim.pmode & 3) << 24;
+
+    spr.cx = tim.cx;
+    spr.cy = tim.cy;
+
+    spr.x = 0;
+    spr.y = 0;
+    spr.mx = 0;
+    spr.my = 0;
+    spr.scalex = 1;
+    spr.scaley = 1;
+    spr.rotate = 0;
+
+    return spr;
+}
+
+/*
+INTERNAL void
 CreateSprite( GsSPRITE *sprite, u64 image_addr )
 {
-    #if 1
     GsIMAGE timdata;
     s32 image_type;
     s32 width_compression;
@@ -143,26 +239,8 @@ CreateSprite( GsSPRITE *sprite, u64 image_addr )
     // Set position to 0 by default
     sprite->x = 0;
     sprite->y = 0;
-    #else
-    RECT r;
-    GsIMAGE *image;
-    GsGetTimInfo((u64*) (image_addr + TIM_HEADER_SIZE), image);
-
-    r.x = image->px;
-    r.y = image->py;
-    r.w = image->pw;
-    r.h = image->ph;
-    LoadImage(&r, image->pixel);
-    if ((image->pmode & 3) < 2)
-    {
-        r.x = image->cx;
-        r.y = image->cy;
-        r.w = image->cw;
-        r.h = image->ch;
-        LoadImage(&curRect, image->clut);
-    }
-    #endif
 }
+*/
 
 INTERNAL void
 VRAMClear( void )
@@ -178,49 +256,6 @@ VRAMClear( void )
 }
 
 /*
-  Initialize the videomode, graphs, and ordertables
-*/
-INTERNAL void
-InitializeGraphics( void )
-{    
-    // Check for NTSC mode
-    s32 offset = 0; /* Can't remember where this goes */
-    u32 flags = GsNONINTER | GsOFSGPU;
-    b32 pal_mode = FALSE;
-    u32 screen_height = SCREEN_HEIGHT_NTSC;
-
-    SetDispMask(1);
-    ResetGraph(0);
-    InitGeom();
-    VRAMClear();
-    
-    pal_mode = (*(char*) 0xbfc7ff52 == 'E'); /* Check ROM for Europe */
-    if (pal_mode)
-    {
-        if (DEBUG) printf("Setting playstation to PAL video mode.");
-        flags = GsINTER | GsOFSGPU;
-        screen_height = SCREEN_HEIGHT_PAL;
-    }
-        
-    // Set video mode and offset
-    SetVideoMode(pal_mode);
-    GsInitGraph(SCREEN_WIDTH, screen_height, flags, 1, 0);
-
-    // set the top left coordinates of the two buffers in video memory
-    GsDefDispBuff(0, 0, 0, screen_height);
-    
-    // Initialize the order tables
-    sgMainOrderTable[0].length = OT_LENGTH;
-    sgMainOrderTable[1].length = OT_LENGTH;
-    sgMainOrderTable[0].org = sgMainOrderTableTag[0];
-    sgMainOrderTable[1].org = sgMainOrderTableTag[1];
-
-    // Clear order tables
-    GsClearOt(0, 0, &sgMainOrderTable[0]);
-    GsClearOt(0, 0, &sgMainOrderTable[1]);
-}
-
-/*
   TODO(Jack): \\
   This is a peculiar case of he-said-she-said.
   The sequence of events that needs to happen here seems to vary in examples.
@@ -230,28 +265,27 @@ InitializeGraphics( void )
 INTERNAL void
 Display( void )
 {
-    if (DEBUG) FntPrint("DANGER-FORCE\nBY JACK RIALES");
-
+#if 0
     // refresh the font
     FntFlush(-1);
     
     // get the current buffer
-    CurrentBuffer = GsGetActiveBuff();
+    ActiveBuffer = GsGetActiveBuff();
     
     // setup the packet workbase
-    GsSetWorkBase((PACKET*)sgGPUPacketArea[CurrentBuffer]);
+    GsSetWorkBase((PACKET*)GPUPackets[ActiveBuffer]);
     
     // clear the ordering table
-    GsClearOt(0,0, &sgMainOrderTable[CurrentBuffer]);
+    GsClearOt(0,0, &OT[ActiveBuffer]);
 
     // clear the ordering table with a background color (R,G,B)
-    GsSortClear(50,50,50, &sgMainOrderTable[CurrentBuffer]);
+    GsSortClear(BackgroundColor.r, BackgroundColor.g, BackgroundColor.b, &OT[ActiveBuffer]);
 
     // Draw sprite
-    GsSortFastSprite(&image, &sgMainOrderTable[CurrentBuffer], 0);
+    GsSortFastSprite(&image, &OT[ActiveBuffer], 0);
 
     #ifdef PXFINDER
-    pxfinder_draw(sgMainOrderTable[CurrentBuffer], 1);
+    pxfinder_draw(OT[ActiveBuffer], 0);
     #endif
         
     // flip the double buffers
@@ -264,38 +298,56 @@ Display( void )
     VSync(0);
     
     // draw the ordering table
-    GsDrawOt(&sgMainOrderTable[CurrentBuffer]);
+    GsDrawOt(&OT[ActiveBuffer]);
+#else
+
+    // Update input
+    s32 pad = PadRead(0);
+    SystemPadT = pad & (pad ^ SystemPad);
+    SystemPad  = pad;
+    
+    // Set and clear the buffer
+    ActiveBuffer = GsGetActiveBuff();
+    GsSetWorkBase((PACKET*)GPUPackets[ActiveBuffer]);
+    GsClearOt(0, 0, &OT[ActiveBuffer]);
+    
+    // Display
+    if (DEBUG) FntFlush(-1);
+    DrawSync(0);
+    VSync(0);
+    GsSwapDispBuff();
+    GsSortClear(BackgroundColor.r, BackgroundColor.g, BackgroundColor.b, &OT[ActiveBuffer]);
+    GsDrawOt(&OT[ActiveBuffer]);
+
+    
+    // Draw
+#ifdef PXFINDER
+    pxfinder_draw(OT[ActiveBuffer], 1);
+#endif
+    
+    GsSortFastSprite(&sprite, &OT[ActiveBuffer], 0);
+#endif
 }
 
 int main( void )
 {
-#if DEBUG
-    printf("\n\nRUNNING DANGER-FORCE ON PSX\n");
-#endif
-    ResetCallback();
-    InitializeGraphics();
-    PadInit(0);
-    
-    /* Upload the default system font pattern to the VRAM and set it as our debug font */
-    FntLoad(960, 256);
-    SetDumpFnt(FntOpen(45, 0, SCREEN_WIDTH, 64, 0, 512));
+    printf("\n\n DANGER FORCE by Jack Riales ((NotebookDeviant)) [2017] \nhttps://github.com/JackRiales/Danger-Force-Psyq");
 
+    InitializeSystem(0, 0, 1);
+
+    image = LoadTIM((u64*)&DFBlue);
+    sprite = MakeSprite(image);
+    
     #ifdef PXFINDER
     pxfinder_init();
     #endif
     
-    // Sprite
-    CreateSprite(&image, (u64) &DFBlue);
-    
     while (TRUE)
     {
+        sprite.x = (sprite.x + 1) % SCREEN_WIDTH;
         Display();
-        image.x = (image.x + 1) % SCREEN_WIDTH;
     }
 
-    PadStop();
-    ResetGraph(0);
-    StopCallback();
-    
+    ExitSystem();
     return 0;
 }

@@ -45,7 +45,7 @@ REM NOTE!! This uses a modified version of BMP2TIM
 REM That version can be found at this link: http://www.psxdev.net/forum/viewtopic.php?f=69&t=780
 REM Replace your EXE file in psyq with his and this will work.
 ECHO Converting Bitmaps to Playstation TIM files...
-FOR %%I IN (%BMPDIR%\*.bmp) DO bmp2tim %%I %TIMDIR%\%%~nI.tim 24 -org=320,256 -mpink ON > nul
+FOR %%I IN (%BMPDIR%\*.bmp) DO bmp2tim %%I %TIMDIR%\%%~nI.tim 16 -org=320,256 -mpink ON > nul
 
 REM Search out and compile .TIM files into headers using bin2h
 REM My version of bin2h is here: https://www.deadnode.org/sw/bin2h/
@@ -54,15 +54,15 @@ FOR %%I IN (%TIMDIR%\*.tim) DO %HEADERTOOL% %%~nI < %%I > %TIMHEADERFOLDER%\%%~n
 
 REM Cleanup some stuff
 ECHO Cleaning up...
-RD /S /Q %BMPDIR%
-RD /S /Q %TIMDIR%
+REM RD /S /Q %BMPDIR%
+REM RD /S /Q %TIMDIR%
 
 REM Come back
 POPD
 
 REM Move the image headers to the code folder for inclusion in the program
 ECHO Moving image headers to the code directory...
-MOVE %META%\%TIMHEADERFOLDER% %CODE%
+MOVE /y %META%\%TIMHEADERFOLDER% %CODE%
 RD /S /Q %META%\%TIMHEADERFOLDER%
 
 ECHO Compiled meta folder successfully.

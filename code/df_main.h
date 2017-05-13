@@ -32,4 +32,17 @@ typedef struct
 
 } GAMEDATA;
 
+typedef struct
+{
+    GsOT     ot[BUFFER_COUNT];
+    GsOT_TAG zsort[BUFFER_COUNT][1 << OT_LENGTH];
+    PACKET   gpu_packet[BUFFER_COUNT][GPUPACKETSIZE * GPUPACKETMAX];
+    RGB8     clear;
+    u8       interlaced;
+    u8       dither;
+    u8       bitmode;
+    u8       current_buffer;
+    u64      timer;
+} SYSTEM;
+
 #endif
