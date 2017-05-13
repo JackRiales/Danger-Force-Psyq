@@ -17,8 +17,12 @@
 #else
 #define SCREEN_HEIGHT 256       /* PAL (International) screen height */
 #endif
+
+/* System constants */
 #define __ramsize   0x00200000; /* 2 MB of RAM */
 #define __stacksize 0x00004000; /* 16 KB of Stack Space */
+#define TIM_HEADER_OFFSET 4     /* Size of the header of a tim file.
+                                   Used for when we only want the actual image data */
 
 /* Game specific variables */
 #define MAX_BULLETS 1000        /* The absolute maximum amount of bullets that

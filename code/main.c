@@ -35,7 +35,7 @@ CreateSprite(GsSPRITE *sprite, const char imageAddress[])
     RECT rect;
     GsIMAGE tdata;
 
-    GsGetTimInfo((u_long*)(imageAddress+4), &tdata);
+    GsGetTimInfo((u_long*)(imageAddress+TIM_HEADER_OFFSET), &tdata);
 
     // load the image into the frame buffer
    rect.x = tdata.px;                                    // tim start X coord
@@ -106,6 +106,8 @@ InitializeGraphics( void )
 
     SetDispMask(1);
     ResetGraph(0);
+    PadInit(0);
+    InitGeom();
     VRAMClear();
     
     pal_mode = (*(char*) 0xbfc7ff52 == 'E'); /* Check ROM for Europe */
@@ -117,7 +119,7 @@ InitializeGraphics( void )
         
     // Set video mode and offset
     SetVideoMode(pal_mode);
-    GsInitGraph(SCREEN_WIDTH, SCREEN_HEIGHT, flags, 1, 0);
+    GsInitGraph(SCREEN_WIDTH, SCREEN_HEIGHT, flags, 1, 1);
 
 // set the top left coordinates of the two buffers in video memory
     GsDefDispBuff(0, 0, 0, SCREEN_HEIGHT);
@@ -174,8 +176,10 @@ int main( void )
 #endif
     ResetCallback();
     InitializeGraphics();
+
+    /* Upload the default system font pattern to the VRAM and set it as our debug font */
     FntLoad(960, 256);
-    SetDumpFnt(FntOpen(5, 20, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 512));
+    SetDumpFnt(FntOpen(45, 32, SCREEN_WIDTH, 64, 0, 512));
 
     // Sprite
     CreateSprite(&image, dfblue);
