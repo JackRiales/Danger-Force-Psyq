@@ -53,16 +53,25 @@ InitializeSystem(BOOL bitmode24,
                  BOOL interlaced,
                  BOOL dithermode)
 {
+    DISPENV display;
     u64 videomode = 0; // NTSC by default
     u16 screen_height = SCREEN_HEIGHT_NTSC; // NTSC by default
     u16 intermode = 0;
 
+    display.screen.x = 0;
+    display.screen.y = 0;
+    display.screen.w = 256;
+    display.screen.h = 256;
+    
     /* Check for european */
     if (*(char*) 0xbfc7ff52 == 'E')
     {
         videomode = 1;
         screen_height = SCREEN_HEIGHT_PAL;
+        display.screen.y = 16; /* PAL offset (288-256) / 2 */
     }
+
+    PutDispEnv(&display);
 
     /* Set interlaced flag */
     if (interlaced)
@@ -101,7 +110,7 @@ InitializeSystem(BOOL bitmode24,
     VSyncCallback(VSYNCCounterWait);
     
     /* Set background color */
-    BackgroundColor.r = 0xff;
+    BackgroundColor.r = 0;
     BackgroundColor.g = 0;
     BackgroundColor.b = 0;
 }
@@ -169,6 +178,10 @@ MakeSprite(GsIMAGE tim)
 
     spr.cx = tim.cx;
     spr.cy = tim.cy;
+
+    spr.r = 128;
+    spr.g = 128;
+    spr.b = 128;
 
     spr.x = 0;
     spr.y = 0;

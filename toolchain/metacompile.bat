@@ -15,7 +15,6 @@ SET BGCOLOR="#FF00FF"
 SET IMAGEMAGICK=convert
 SET IMARGS=-background %BGCOLOR% -flatten
 SET BMP2TIM=bmp2tim
-SET BMPDIR=bmp
 SET TIMDIR=tim
 
 REM Tim-to-header conversion
@@ -28,24 +27,15 @@ REM Head to the meta folder
 PUSHD ..\meta
 
 REM Delete and remake the folders
-IF EXIST %BMPDIR% RD /S /Q %BMPDIR%
 IF EXIST %TIMDIR% RD /S /Q %TIMDIR%
 IF EXIST %TIMHEADERFOLDER% RD /S /Q %TIMHEADERFOLDER%
-MKDIR %BMPDIR%
 MKDIR %TIMDIR%
 MKDIR %TIMHEADERFOLDER%
 
-REM Convert all PNG's to BMPs
-REM Requires IMAGEMAGICK, any version should do so long as it's in your path
-ECHO Converting PNG workfiles to BMPs...
-FOR %%I IN (*.png) DO %IMAGEMAGICK% %%I %IMARGS% %BMPDIR%\%%~nI.bmp
-
-REM Convert those BMPs to TIMs (redirecting annoying output)
-REM NOTE!! This uses a modified version of BMP2TIM
-REM That version can be found at this link: http://www.psxdev.net/forum/viewtopic.php?f=69&t=780
-REM Replace your EXE file in psyq with his and this will work.
+REM Convert all images to TIMs (redirecting annoying output)
+REM NOTE!! This uses a special img2tim program, found here: https://github.com/Lameguy64/img2tim
 ECHO Converting Bitmaps to Playstation TIM files...
-FOR %%I IN (%BMPDIR%\*.bmp) DO bmp2tim %%I %TIMDIR%\%%~nI.tim 16 -org=320,256 -mpink ON > nul
+FOR %%I IN (*.png) DO img2tim -usealpha -bpp 16 %%I -o %TIMDIR%\%%~nI.tim > nul
 
 REM Search out and compile .TIM files into headers using bin2h
 REM My version of bin2h is here: https://www.deadnode.org/sw/bin2h/
@@ -54,7 +44,6 @@ FOR %%I IN (%TIMDIR%\*.tim) DO %HEADERTOOL% %%~nI < %%I > %TIMHEADERFOLDER%\%%~n
 
 REM Cleanup some stuff
 ECHO Cleaning up...
-REM RD /S /Q %BMPDIR%
 REM RD /S /Q %TIMDIR%
 
 REM Come back
@@ -62,8 +51,12 @@ POPD
 
 REM Move the image headers to the code folder for inclusion in the program
 ECHO Moving image headers to the code directory...
-MOVE /y %META%\%TIMHEADERFOLDER% %CODE%
-RD /S /Q %META%\%TIMHEADERFOLDER%
+IF EXIST %CODE%\%TIMHEADERFOLDER% RD /S /Q %CODE%\%TIMHEADERFOLDER%
+MOVE %META%\%TIMHEADERFOLDER% %CODE%
 
 ECHO Compiled meta folder successfully.
+
+CALL createassetheader.bat
+ECHO Wrote asset header
+
 pause
