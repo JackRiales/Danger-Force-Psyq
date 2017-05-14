@@ -11,13 +11,19 @@
 #include <libgpu.h>
 #include <libetc.h>
 #include <libgs.h>
+#include <libsn.h>
+#include <libcd.h>
 #include <stdlib.h>
 #include "df_types.h"
 #include "df_constants.h"
 #include "df_main.h"
 
 /* Assets */
-#include "imageh/DFBlue.h" // NOTE(Jack): defines `DFBlue`
+// #include "imageh/DFBlue.h" // NOTE(Jack): defines `DFBlue`
+u8 DFBlue[] = {0x0}; /* just for now */
+
+/* Single translation unit for now, don't freak out */
+#include "df_data.c"
 
 /* For convenience, PXFINDER */
 /* https://github.com/apiraino/psx_pxfinder */
@@ -110,9 +116,9 @@ InitializeSystem(BOOL bitmode24,
     VSyncCallback(VSYNCCounterWait);
     
     /* Set background color */
-    BackgroundColor.r = 0;
-    BackgroundColor.g = 0;
-    BackgroundColor.b = 0;
+    BackgroundColor.r = 50;
+    BackgroundColor.g = 50;
+    BackgroundColor.b = 50;
 }
 
 INTERNAL void
@@ -194,67 +200,6 @@ MakeSprite(GsIMAGE tim)
     return spr;
 }
 
-/*
-INTERNAL void
-CreateSprite( GsSPRITE *sprite, u64 image_addr )
-{
-    GsIMAGE timdata;
-    s32 image_type;
-    s32 width_compression;
-
-    // Get the information about the TIM from the given address
-    GsGetTimInfo((u64*) image_addr + TIM_HEADER_SIZE, &timdata);
-
-    // Gather what kind of width compression it has
-    image_type = timdata.pmode & 3;
-    switch (image_type)
-    {
-        case 0: { width_compression = 4; break; }
-        case 1: { width_compression = 2; break; }
-        case 2: { width_compression = 1; break; }
-        case 3: { printf("\n24-bit TIMs are unsupported right now."); break; }
-    }
-
-    // Set attribute color depth and size
-    sprite->attribute = (image_type << 24);
-    sprite->w = timdata.pw * width_compression;
-    sprite->h = timdata.ph;
-
-    // Set texture page
-    sprite->tpage = GetTPage(image_type, 0, timdata.px, timdata.py);
-
-    // VRAM offset
-    sprite->u = (timdata.px % 64) * width_compression;
-    sprite->v = timdata.py % 256;
-
-    // Set CLUT position if it's 4 or 8 bit
-    if (image_type < 2)
-    {
-        sprite->cx = timdata.cx;
-        sprite->cy = timdata.cy;
-    }
-
-    // Set all brightnesses to midvalue
-    sprite->r = 128;
-    sprite->g = 128;
-    sprite->b = 128;
-
-    // Set scale and rotation (defaults)
-    // 4096 is the GPU equiv of 1
-    sprite->scalex = 4096;
-    sprite->scaley = 4096;
-    sprite->rotate = 0;
-
-    // Set the origin (m) to be the center of the sprite by default
-    sprite->mx = timdata.pw * width_compression / 2;
-    sprite->my = timdata.ph / 2;
-
-    // Set position to 0 by default
-    sprite->x = 0;
-    sprite->y = 0;
-}
-*/
-
 INTERNAL void
 VRAMClear( void )
 {    
@@ -276,7 +221,7 @@ VRAMClear( void )
   Find out what really needs to happen here.
  */
 INTERNAL void
-Display( void )
+UpdateAndDisplay( void )
 {
 #if 0
     // refresh the font
@@ -358,7 +303,7 @@ int main( void )
     while (TRUE)
     {
         sprite.x = (sprite.x + 1) % SCREEN_WIDTH;
-        Display();
+        UpdateAndDisplay();
     }
 
     ExitSystem();
